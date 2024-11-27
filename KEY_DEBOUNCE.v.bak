@@ -1,0 +1,43 @@
+module key_debounce (
+    input wire clk,      // Clock signal
+    input wire reset,    // Reset signal
+    input wire key_in,   // Input from the key
+    output reg key_out   // Debounced key output
+);
+
+    // Parameters
+    parameter N = 19; // Determines debounce time
+
+    // Internal Registers
+    reg [N-1:0] count;
+    reg key_in_sync_0, key_in_sync_1;
+
+    // Synchronize the key input to the clock domain
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            key_in_sync_0 <= 0;
+            key_in_sync_1 <= 0;
+        end else begin
+            key_in_sync_0 <= key_in;
+            key_in_sync_1 <= key_in_sync_0;
+        end
+    end
+
+    // Debounce logic
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            count <= 0;
+            key_out <= 0;
+        end else begin
+            if (key_in_sync_1 == key_out) begin
+                count <= 0; // No change detected
+            end else begin
+                count <= count + 1;
+                if (count == {N{1'b1}}) begin
+                    key_out <= key_in_sync_1; // Change detected after debounce time
+                end
+            end
+        end
+    end
+
+endmodule
